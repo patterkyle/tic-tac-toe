@@ -5,11 +5,9 @@
 
 (provide game-over?)
 
-(define name         "tic-tac-toe")
-(define frame-width  400)
-(define frame-height 300)
-(define cell-size    50)
-(define grid-sep     10)
+(define name     "tic-tac-toe")
+(define frame-w  400)
+(define frame-h  300)
 
 ;game state
 (struct gs (board
@@ -48,40 +46,48 @@
              a _ _) #:when (not (empty? a)) a]
     [_ #f]))
 
-(define (draw-cell val size)
-  (match val
-    [a #:when (not (empty? a)) (text (symbol->string a)
-                                     (cons "monospace" 'default)
-                                     size)]
-    [_ (blank size)]))
+(define (draw-cell val w h)
+  (cc-superimpose (match val
+                    [s #:when (not (empty? s))
+                       (scale-to-fit (text (symbol->string s)
+                                           (cons "monospace" 'default))
+                                     w h)]
+                    [_ (blank w h)])
+                  (rectangle w h)))
 
-(define (draw-board board cell-size)
-  (table 3
-         (for/list ([val board])
-           (draw-cell val cell-size))
-         cc-superimpose
-         cc-superimpose
-         grid-sep
-         grid-sep))
+(define (game-board board w h)
+  (scale-to-fit (table 3
+                       (for/list ([val board])
+                         (draw-cell val
+                                    (floor (/ w 3))
+                                    (floor (/ h 3))))
+                       cc-superimpose
+                       cc-superimpose
+                       0 0)
+                w h))
 
 (define b0 (empty-board))
-(define b1 (vector 'x    'x   'x
+(define b1 (vector 'x    'x    'x
                    empty empty empty
                    empty empty empty))
 (define b2 (vector 'x    'x    'o
-                   empty 'o     empty
-                   'o     empty 'x))
+                   empty 'o    empty
+                   'o    empty 'x))
 
 (define frame (new frame%
                    [label  name]
-                   [width  frame-width]
-                   [height frame-height]))
+                   [width  frame-w]
+                   [height frame-h]))
 
 (define (handle-event event)
   (void))
 
 (define (handle-char-event event)
   (void))
+
+(define (paint-callback canvas dc)
+  (draw-pict (game-board b2 frame-w frame-h)
+             dc 0 0))
 
 (define game-canvas% (class canvas%
                        (define/override (on-event event)
@@ -90,7 +96,9 @@
                          (handle-char-event event))
                        (super-new)))
 
-(new game-canvas% [parent frame])
+(new game-canvas%
+     [parent         frame]
+     [paint-callback paint-callback])
 
 (define (main)
   (send frame show #t))
