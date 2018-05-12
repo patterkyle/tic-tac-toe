@@ -8,7 +8,7 @@
 
 ;game state
 (struct gs (board
-            next-val)
+            next-move)
   #:transparent
   #:mutable)
 
@@ -49,6 +49,24 @@
 
 (define (draw-cell val size)
   (match val
-    [a #:when (not (empty? a))
-       (text "x" (cons "monospace" 'default) size)]
-    [_ (blank size)]))
+    [a #:when (not (empty? a)) (text (symbol->string a)
+                                     (cons "monospace" 'default)
+                                     size)]
+    [_                         (blank size)]))
+
+(define (draw-board board cell-size)
+  (table 3
+         (for/list ([cell board])
+           (draw-cell cell cell-size))
+         cc-superimpose
+         cc-superimpose
+         10
+         10))
+
+(define b0 (empty-board))
+(define b1 (vector 'x    'x   'x
+                   empty empty empty
+                   empty empty empty))
+(define b2 (vector 'x    'x    'o
+                   empty 'o     empty
+                   'o     empty 'x))
