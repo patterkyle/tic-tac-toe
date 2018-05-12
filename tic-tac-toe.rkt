@@ -3,12 +3,11 @@
 (require pict
          racket/gui)
 
-(provide game-over?)
+(provide winner?)
 
-(define name       "tic-tac-toe")
-(define frame-w    400)
-(define frame-h    300)
-(define first-move (list-ref '(x o) (random 2)))
+(define name    "tic-tac-toe")
+(define frame-w 400)
+(define frame-h 300)
 
 (define (empty-board)
   (make-vector 9 empty))
@@ -16,15 +15,15 @@
 ;game state
 (struct gs (board
             next-move
-            over?/winner) ; #f if game is ongoing, 'x or 'y if there's a winner
+            winner?); #f if game is ongoing, 'x or 'y if game is over
   #:transparent
   #:mutable)
 
 (define game-state (gs (empty-board)
-                       first-move
+                       (list-ref '(x o) (random 2))
                        #f))
 
-(define (game-over? board)
+(define (winner? board)
   (match board
     [(or (vector a a a
                  _ _ _
@@ -60,6 +59,9 @@
                                      w h)]
                     [_ (blank w h)])
                   (rectangle w h)))
+
+;; (define (success-msg winner w h)
+;;   (text ))
 
 (define (game-board board w h)
   (scale-to-fit (table 3
@@ -102,13 +104,21 @@
        (let ([num (string->number (string a))])
          (when (< 0 num 10)
            (update-cell! game-state (sub1 num))
+           (match (winner? (gs-board game-state))
+             ['x (set-gs-winner?! game-state 'x)]
+             ['o (set-gs-winner?! game-state 'o)]
+             [_ (void)])
            (send canvas refresh)))]
     [_ (void)]))
 
 (define (paint-callback canvas dc)
   (send dc set-smoothing 'aligned)
-  (draw-pict (game-board (gs-board game-state) frame-w frame-h)
-             dc 0 0))
+  (match (gs-winner? game-state)
+    ['x (draw-pict (text "x wins") dc 0 0)]
+    ['o (draw-pict (text "o wins") dc 0 0)]
+    [_ (draw-pict (game-board (gs-board game-state)
+                              frame-w frame-h)
+                  dc 0 0)]))
 
 (define game-canvas% (class canvas%
                        (define/override (on-event event)
@@ -124,4 +134,4 @@
 (define (main)
   (send frame show #t))
 
-;; (main)
+(main)
