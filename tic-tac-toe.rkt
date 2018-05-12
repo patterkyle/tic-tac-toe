@@ -1,10 +1,15 @@
 #lang racket
 
-(require pict)
+(require pict
+         racket/gui)
 
 (provide game-over?)
 
-(define NAME "tic-tac-toe")
+(define name         "tic-tac-toe")
+(define frame-width  400)
+(define frame-height 300)
+(define cell-size    50)
+(define grid-sep     10)
 
 ;game state
 (struct gs (board
@@ -14,10 +19,6 @@
 
 (define (empty-board)
   (make-vector 9 empty))
-
-(define (print-board board)
-  (apply (curry printf "~a ~a ~a\n~a ~a ~a\n~a ~a ~a")
-         (vector->list board)))
 
 (define (game-over? board)
   (match board
@@ -52,16 +53,16 @@
     [a #:when (not (empty? a)) (text (symbol->string a)
                                      (cons "monospace" 'default)
                                      size)]
-    [_                         (blank size)]))
+    [_ (blank size)]))
 
 (define (draw-board board cell-size)
   (table 3
-         (for/list ([cell board])
-           (draw-cell cell cell-size))
+         (for/list ([val board])
+           (draw-cell val cell-size))
          cc-superimpose
          cc-superimpose
-         10
-         10))
+         grid-sep
+         grid-sep))
 
 (define b0 (empty-board))
 (define b1 (vector 'x    'x   'x
@@ -70,3 +71,28 @@
 (define b2 (vector 'x    'x    'o
                    empty 'o     empty
                    'o     empty 'x))
+
+(define frame (new frame%
+                   [label  name]
+                   [width  frame-width]
+                   [height frame-height]))
+
+(define (handle-event event)
+  (void))
+
+(define (handle-char-event event)
+  (void))
+
+(define game-canvas% (class canvas%
+                       (define/override (on-event event)
+                         (handle-event event))
+                       (define/override (on-char event)
+                         (handle-char-event event))
+                       (super-new)))
+
+(new game-canvas% [parent frame])
+
+(define (main)
+  (send frame show #t))
+
+(main)
