@@ -3,9 +3,10 @@
 (require pict
          racket/gui)
 
-(provide winner?)
+(provide game-over?)
 
-(define name    "tic-tac-toe")
+(define name "tic-tac-toe")
+
 (define frame-w 400)
 (define frame-h 300)
 
@@ -15,7 +16,7 @@
 ;game state
 (struct gs (board
             next-move
-            winner?); #f if game is ongoing, 'x or 'y if game is over
+            game-over?); #f if game is ongoing, 'x or 'y if there is a winner
   #:transparent
   #:mutable)
 
@@ -23,7 +24,7 @@
                        (list-ref '(x o) (random 2))
                        #f))
 
-(define (winner? board)
+(define (game-over? board)
   (match board
     [(or (vector a a a
                  _ _ _
@@ -60,8 +61,14 @@
                     [_ (blank w h)])
                   (rectangle w h)))
 
-;; (define (success-msg winner w h)
-;;   (text ))
+(define (success-msg sym w h)
+  (scale-to-fit (vc-append (text (string-append (symbol->string sym)
+                                                " wins!")
+                                 (cons "monospace" 'default))
+                           (text "Press [esc] to play again."
+                                 (cons "monospace" 'default)
+                                 5))
+                w h))
 
 (define (game-board board w h)
   (scale-to-fit (table 3
@@ -74,14 +81,6 @@
                        0 0)
                 w h))
 
-(define b0 (empty-board))
-(define b1 (vector 'x    'x    'x
-                   empty empty empty
-                   empty empty empty))
-(define b2 (vector 'x    'x    'o
-                   empty 'o    empty
-                   'o    empty 'x))
-
 (define frame (new frame%
                    [label  name]
                    [width  frame-w]
@@ -92,7 +91,8 @@
 
 (define (update-cell! state i)
   (vector-set! (gs-board state) i (gs-next-move state))
-  (set-gs-next-move! state (if (eq? (gs-next-move state) 'x)
+  (set-gs-next-move! state (if (eq? (gs-next-move state)
+                                    'x)
                                'o
                                'x)))
 
@@ -101,21 +101,22 @@
     [a #:when (and (not (empty? a))
                    (not (symbol? a))
                    (char-numeric? a))
-       (let ([num (string->number (string a))])
-         (when (< 0 num 10)
-           (update-cell! game-state (sub1 num))
-           (match (winner? (gs-board game-state))
-             ['x (set-gs-winner?! game-state 'x)]
-             ['o (set-gs-winner?! game-state 'o)]
+       (let ([num (sub1 (string->number (string a)))])
+         (when (< -1 num 9)
+           (update-cell! game-state num)
+           (match (game-over? (gs-board game-state))
+             ['x (set-gs-game-over?! game-state 'x)]
+             ['o (set-gs-game-over?! game-state 'o)]
              [_ (void)])
            (send canvas refresh)))]
     [_ (void)]))
 
 (define (paint-callback canvas dc)
   (send dc set-smoothing 'aligned)
-  (match (gs-winner? game-state)
-    ['x (draw-pict (text "x wins") dc 0 0)]
-    ['o (draw-pict (text "o wins") dc 0 0)]
+  (match (gs-game-over? game-state)
+    [a #:when (not (false? a))
+       (draw-pict (success-msg a frame-w frame-h)
+                  dc 0 (floor (/ frame-h 4)))]
     [_ (draw-pict (game-board (gs-board game-state)
                               frame-w frame-h)
                   dc 0 0)]))
@@ -134,4 +135,4 @@
 (define (main)
   (send frame show #t))
 
-(main)
+;; (main)
