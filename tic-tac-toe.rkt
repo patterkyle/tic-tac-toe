@@ -100,7 +100,8 @@
   (match (send event get-key-code)
     [a #:when (and (not (empty? a))
                    (not (symbol? a))
-                   (char-numeric? a))
+                   (char-numeric? a)
+                   (not (gs-game-over? game-state)))
        (let ([num (sub1 (string->number (string a)))])
          (when (< -1 num 9)
            (update-cell! game-state num)
@@ -109,6 +110,10 @@
              ['o (set-gs-game-over?! game-state 'o)]
              [_ (void)])
            (send canvas refresh)))]
+    [a #:when (eq? a 'escape)
+       (begin (set-gs-game-over?! game-state #f)
+              (set-gs-board! game-state (empty-board))
+              (send canvas refresh))]
     [_ (void)]))
 
 (define (paint-callback canvas dc)
@@ -135,4 +140,4 @@
 (define (main)
   (send frame show #t))
 
-;; (main)
+(main)
